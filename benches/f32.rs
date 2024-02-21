@@ -2,12 +2,10 @@ use std::hint::black_box;
 
 use criterion::Criterion;
 
-#[inline(never)]
 pub fn midpoint_upcast(x: f32, y: f32) -> f32 {
     ((f64::from(x) + f64::from(y)) / 2.0) as f32
 }
 
-#[inline(never)]
 pub fn midpoint_std(a: f32, b: f32) -> f32 {
     const LO: f32 = f32::MIN_POSITIVE * 2.;
     const HI: f32 = f32::MAX / 2.;
