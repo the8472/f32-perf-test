@@ -76,17 +76,17 @@ fn cgroup(c: &mut Criterion) {
         });
     }
 
-    let small_numbers: Vec<(f32, f32)> = (0..10_000_000)
+    let (xs, ys): (Vec<f32>, Vec<f32>) = (0..10_000_000)
         .map(|_| {
             let x = rand::random::<f32>();
             let y = rand::random::<f32>();
             (x * 100.0, y * 100.0)
         })
-        .collect();
+        .unzip();
 
     c.bench_function("f64::from 10M small float pairs", |b| {
         b.iter(|| {
-            for &(x, y) in small_numbers.iter() {
+            for (&x, &y) in xs.iter().zip(&ys) {
                 black_box(midpoint_upcast(x, y));
             }
         })
@@ -94,7 +94,7 @@ fn cgroup(c: &mut Criterion) {
 
     c.bench_function("std 10M small float pairs", |b| {
         b.iter(|| {
-            for &(x, y) in small_numbers.iter() {
+            for (&x, &y) in xs.iter().zip(&ys) {
                 black_box(midpoint_std(x, y));
             }
         })
@@ -102,10 +102,11 @@ fn cgroup(c: &mut Criterion) {
 
     c.bench_function("f64::from 10M small float pairs hope auto vec", |b| {
         b.iter(|| {
-            for chunk in small_numbers.chunks(8) {
-                let a = chunk
+            for (x, y) in xs.chunks(8).zip(ys.chunks(8)) {
+                let a = x
                     .iter()
-                    .map(|&(x, y)| midpoint_upcast(x, y))
+                    .zip(y)
+                    .map(|(&x, &y)| midpoint_upcast(x, y))
                     .sum::<f32>();
                 black_box(a);
             }
@@ -114,26 +115,30 @@ fn cgroup(c: &mut Criterion) {
 
     c.bench_function("std 10M small float pairs hope auto vec", |b| {
         b.iter(|| {
-            for chunk in small_numbers.chunks(8) {
-                let a = chunk.iter().map(|&(x, y)| midpoint_std(x, y)).sum::<f32>();
+            for (x, y) in xs.chunks(8).zip(ys.chunks(8)) {
+                let a = x
+                    .iter()
+                    .zip(y)
+                    .map(|(&x, &y)| midpoint_std(x, y))
+                    .sum::<f32>();
                 black_box(a);
             }
         })
     });
 
-    drop(small_numbers);
+    drop((xs, ys));
 
-    let weird_numbers: Vec<(f32, f32)> = (0..10_000_000)
+    let (xs, ys): (Vec<f32>, Vec<f32>) = (0..10_000_000)
         .map(|_| {
             let x = rand::random::<f32>();
             let y = rand::random::<f32>();
             (x * f32::MAX, y * f32::MAX)
         })
-        .collect();
+        .unzip();
 
     c.bench_function("f64::from 10M weird float pairs", |b| {
         b.iter(|| {
-            for &(x, y) in weird_numbers.iter() {
+            for (&x, &y) in xs.iter().zip(&ys) {
                 black_box(midpoint_upcast(x, y));
             }
         })
@@ -141,7 +146,7 @@ fn cgroup(c: &mut Criterion) {
 
     c.bench_function("std 10M weird float pairs", |b| {
         b.iter(|| {
-            for &(x, y) in weird_numbers.iter() {
+            for (&x, &y) in xs.iter().zip(&ys) {
                 black_box(midpoint_std(x, y));
             }
         })
