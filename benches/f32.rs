@@ -100,6 +100,27 @@ fn cgroup(c: &mut Criterion) {
         })
     });
 
+    c.bench_function("f64::from 10M small float pairs hope auto vec", |b| {
+        b.iter(|| {
+            for chunk in small_numbers.chunks(8) {
+                let a = chunk
+                    .iter()
+                    .map(|&(x, y)| midpoint_upcast(x, y))
+                    .sum::<f32>();
+                black_box(a);
+            }
+        })
+    });
+
+    c.bench_function("std 10M small float pairs hope auto vec", |b| {
+        b.iter(|| {
+            for chunk in small_numbers.chunks(8) {
+                let a = chunk.iter().map(|&(x, y)| midpoint_std(x, y)).sum::<f32>();
+                black_box(a);
+            }
+        })
+    });
+
     drop(small_numbers);
 
     let weird_numbers: Vec<(f32, f32)> = (0..10_000_000)
