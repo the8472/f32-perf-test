@@ -1,3 +1,5 @@
+#![feature(slice_as_chunks)]
+
 use std::hint::black_box;
 
 use criterion::Criterion;
@@ -100,29 +102,41 @@ fn cgroup(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("f64::from 10M small float pairs hope auto vec", |b| {
+    c.bench_function("f64::from 10M small float pairs auto vec", |b| {
         b.iter(|| {
-            for (x, y) in xs.chunks(8).zip(ys.chunks(8)) {
-                let a = x
-                    .iter()
-                    .zip(y)
-                    .map(|(&x, &y)| midpoint_upcast(x, y))
-                    .sum::<f32>();
-                black_box(a);
-            }
+            const LANES: usize = 8;
+
+            let chunks_a = xs.as_chunks::<LANES>().0;
+            let chunks_b = ys.as_chunks::<LANES>().0;
+
+            let mut sum = [0f32; LANES];
+
+            chunks_a.iter().zip(chunks_b).for_each(|(a, b)| {
+                for i in 0..sum.len() {
+                    sum[i] += midpoint_upcast(a[i], b[i])
+                }
+            });
+
+            sum.iter().sum::<f32>()
         })
     });
 
-    c.bench_function("std 10M small float pairs hope auto vec", |b| {
+    c.bench_function("std 10M small float pairs auto vec", |b| {
         b.iter(|| {
-            for (x, y) in xs.chunks(8).zip(ys.chunks(8)) {
-                let a = x
-                    .iter()
-                    .zip(y)
-                    .map(|(&x, &y)| midpoint_std(x, y))
-                    .sum::<f32>();
-                black_box(a);
-            }
+            const LANES: usize = 8;
+
+            let chunks_a = xs.as_chunks::<LANES>().0;
+            let chunks_b = ys.as_chunks::<LANES>().0;
+
+            let mut sum = [0f32; LANES];
+
+            chunks_a.iter().zip(chunks_b).for_each(|(a, b)| {
+                for i in 0..sum.len() {
+                    sum[i] += midpoint_std(a[i], b[i])
+                }
+            });
+
+            sum.iter().sum::<f32>()
         })
     });
 
